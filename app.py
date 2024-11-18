@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -21,11 +21,12 @@ class User(db.Model):
 # create database tables
 with app.app_context():
     db.create_all()
+    print(app.instance_path)
 
-# routes
+# routes 
 @app.route("/")
 def home():
-    return "Welcome to Flask-SQLAlchemy demo"
+    return "Home page for Flask-SQLAlchemy demo"
 
 @app.route("/users", methods=["POST"])
 def add_user():
