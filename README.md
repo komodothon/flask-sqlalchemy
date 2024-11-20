@@ -3,9 +3,11 @@ Flask-SQLAlchem implementation within a flask web app and managing a SQLite data
 
 Postman VSCode extension used to test the APIs.
 
-In this version, apart from the basics, the functionality involves association of three elements in a one-to-many (Users to Posts), many-to-many (Posts to Tags) relationship.
+In this version, apart from the basics, the functionality involves association of three models in a one-to-many (Users to Posts), many-to-many (Posts to likes) relationship.
 
-A multi-model, relational database with features to manage users, their posts, and a tagging system. Providing API to interect with the data, allowing create and read operations (not update/delete) on users, posts and tags.
+A multi-model, relational database with features to manage users, their posts, and commenting and likes system. Providing API to interect with the data, allowing create and read operations (not update/delete) on users, posts and tags.
+
+Session management is implemented using session object from Flask.
 
 ---
 
@@ -13,9 +15,7 @@ A multi-model, relational database with features to manage users, their posts, a
 ---
 
 ### 1. **App Configuration**
-- The app is configured to use **SQLite** as its database via the URI `sqlite:///example.db`.
-- `SQLALCHEMY_TRACK_MODIFICATIONS` is disabled for performance optimization.
-
+- The app is configured to use **SQLite** as its database via the URI `sqlite:///blog.db`.
 ---
 
 ### 2. **Database Setup**
@@ -33,15 +33,15 @@ A multi-model, relational database with features to manage users, their posts, a
   -  `relationship`: with `User` model with `Post` as a post. One post can be authored only one `User`.
   -  `relationship`: with `Tag` model with `Tag` as a tag. One post can have many tags. Association is secondary as described by the Association Table.
 
-- `Tag` model defined for a tags table in the database with the following columns:
+- `Comment` model defined for a comments table in the database with the following columns:
   - `id`: Primary key, integer.
-  - `name`: String, unique, non-nullable.
-  -  `relationship`: with `Post` model. One `Tag` can be applied to many different `Post` elements. Similarly, one `Post` can have many different `Tag`s
+  - `content`: String, unique, non-nullable.
+  -  `user_id`: id of the commenting user as foreign key.
+    - `post_id`: related post for this comment, as foreign key.
 
-- Association table `post_tags` added in the database with the following columns:
-  - `post_id`: Primary key, integer, is a ForeignKey from ('posts.id').
-  - `tag_id`: Primary key, integer, is a ForeignKey from ('tags.id').
-  - Each association of a tag to a post is a separate row in this table.
+- Association table `likes` added in the database with the following columns:
+  -  `user_id`: id of the commenting user as foreign key.
+    - `post_id`: related post for this comment, as foreign key.
 
 - Database tables are created using `db.create_all()` within the application context.
 
@@ -51,45 +51,43 @@ A multi-model, relational database with features to manage users, their posts, a
 #### - **Home Page (`/`)**
   - A simple route that returns a plain text message for demonstration.
 
-#### - **Add User (`/users`, POST)**
-  - Accepts JSON data to add a new user with `username` and `email`.
+#### - **Register (`/register`, POST)**
+  - Accepts JSON data to register a new user with `username`,  `email` and `password`.
   - Checks for duplicate usernames.
+  - secures the password by hashing using bcrypt hash.
   - Inserts the new user into the database and commits the transaction.
 
-#### - **Get All Users (`/users`, GET)**
-  - Retrieves all users from the database.
-  - Returns a JSON response containing a list of all users.
+#### - **Login (`/login`, POST)**
+  - Logs a user in.
+  - initiates a session for that user.
 
-#### - **Add Post (`/posts`, POST)**
-  - Accepts JSON data to add a new post with `title`, `content` and `author`.
+#### - **Create Post (`/posts`, POST)**
+  - Accepts JSON data to add a new post with `title`, `content` and utilises user detail from `session` to be author of the post.
   - Inserts the new post into the database and commits the transaction.
+
+#### - **like a post (`/posts/<int:post_id>/like`, POST)**
+  - Accepts JSON data to like a post.
+  - Inserts the new like into the database association table and commits the transaction.
+
+#### - **Add comment (`/posts/<int:post_id>/comments`, POST)**
+  - Accepts JSON data to add a new comment with `content`.
+  - retrieves detail of commenting user from `session`.
+  - Inserts the new comment into the database and commits the transaction.
 
 #### - **Get All Posts (`/posts`, GET)**
   - Retrieves all posts from the database.
   - Returns a JSON response containing a list of all posts.
-
-#### - **Add Tag (`/tags`, POST)**
-  - Accepts JSON data to add a new tag with `name`.
-  - Inserts the new tag into the database and commits the transaction.
-
-#### - **Get All Tags (`/tags`, GET)**
-  - Retrieves all tags from the database.
-  - Returns a JSON response containing a list of all tags.
-
-#### - **Add Tag to Post(`/posts/<int:post_id>/tags`, POST)**
-  - Accepts JSON data to add a existing tag to an existing post.
-  - Checks for specific tag and post to exist in the database before association.
-  - Inserts the tag and associated post info into the post_tags table of database and commits the transaction.
 
 ---
 
 ## Example Usage
 **Testing the APIs using Postman app**
 
-### 1. **POST Request to `/users`**
+### 1. **POST Request to `/register`**
 Add a user with a JSON payload:
 ```json
 {
   "username": "john_doe",
-  "email": "john.doe@example.com"
+  "email": "john.doe@example.com",
+  "password": "Hellojohn"
 }
