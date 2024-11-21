@@ -75,7 +75,7 @@ JWT tokens used for user authorisation (Flask-JWT-Extended library).
 
 ---
 ### Learnings
-  - `access_token = create_access_token(identity=(user.id))`. Integer object was introduced as 'sub' or subject in jwt token which was not accepted and resulted in error. Hence, string conversion was effected as `access_token = create_access_token(identity=str(user.id))`
+  - `access_token = create_access_token(identity=(user.id))`. Integer object was introduced as 'sub' or subject in jwt token which was not accepted and resulted in response below. Hence, string conversion was effected as `access_token = create_access_token(identity=str(user.id))`
   
   ```json 
     {"msg": "Subject must be a string"}
