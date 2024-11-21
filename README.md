@@ -1,5 +1,5 @@
 # flask-sqlalchemy
-Flask-SQLAlchem implementation within a flask web app and managing a SQLite database
+Flask-SQLAlchemy implementation within a flask web app and managing a SQLite database
 
 Postman application used to test the APIs routes and endpoints.
 
@@ -9,7 +9,9 @@ A multi-model, relational database with features to manage users and their posts
 
 ~~Session management is implemented using session object from Flask.~~
 
-Flask-Login library and it's elements are implemented for user management, user authentication and user session management.
+~~Flask-Login library and it's elements are implemented for user management, user authentication and user session management.~~
+
+JWT tokens used for user authorisation (Flask-JWT-Extended library). 
 
 ---
 
@@ -61,22 +63,31 @@ Flask-Login library and it's elements are implemented for user management, user 
   - Logs a user in.
   - initiates a session for that user.
 
-#### - **Logout (`/logout`, POST)**
-  - Logs out the current user.
-  - closes the session of current user.
-
 #### - **Create Post (`/posts`, POST)**
+  - `@jwt_required()` decorator ensures that a valid token is required to access post-related routes. `get_jwt_identity()` function retrieves current user's identity from the JWT token.
   - Accepts JSON data to add a new post with `title`, `content` and utilises user detail from `session` to be author of the post.
   - Inserts the new post into the database and commits the transaction.
 
 #### - **Get All Posts (`/posts`, GET)**
+  - `@jwt_required()` decorator ensures that a valid token is required to access post-related routes. `get_jwt_identity()` function retrieves current user's dentity from the JWT token.
   - Retrieves all posts from the database by current user.
   - Returns a JSON response containing a list of all posts.
 
 ---
+### Learnings
+  - `access_token = create_access_token(identity=(user.id))`. Integer object was introduced as 'sub' or subject in jwt token which was not accepted and resulted in error. Hence, string conversion was effected as `access_token = create_access_token(identity=str(user.id))`
+  
+  ```json 
+    {"msg": "Subject must be a string"}
+  ``` 
 
+  - Expected that when assigning `current_user_id = get_jwt_identity()`, may need to convert back to Integer. But not needed to. 
+  - Reason: assuming that SQLAlchemy does the data type coercion of the String object into Integer automatically. To be reviewed.
+
+---
 ## Example Usage
 **Testing the APIs using Postman app**
+
 
 ### 1. **POST Request to `/register`**
 Add a user with a JSON payload:
@@ -86,3 +97,8 @@ Add a user with a JSON payload:
   "email": "john.doe@example.com",
   "password": "Hellojohn"
 }
+```
+
+### 2. **GET Request to `/my_posts`**
+Requires a valid JWT token in the Authorization header.:
+`Authorization: Bearer <your_jwt_token>`
