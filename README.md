@@ -35,13 +35,13 @@ JWT tokens used for user authorisation (Flask-JWT-Extended library).
   - `title`: String, unique, non-nullable.
   - `content`: Text, unique, non-nullable.
   -  `relationship`: with `User` model with `Post` as a post. One post can be authored only one `User`.
- -  ~~ `relationship`: with `Tag` model with `Tag` as a tag. One post can have many tags. Association is secondary as described by the Association Table.~~
+  - ~~`relationship`: with `Tag` model with `Tag` as a tag. One post can have many tags. Association is secondary as described by the Association Table.~~
 
 - ~~`Comment` model defined for a comments table in the database with the following columns:~~
- ~~ - `id`: Primary key, integer.~~
-~~  - `content`: String, unique, non-nullable.~~
-~~  -  `user_id`: id of the commenting user as foreign key.~~
-~~    - `post_id`: related post for this comment, as foreign key.~~
+  - ~~`id`: Primary key, integer.~~
+  - ~~`content`: String, unique, non-nullable.~~
+  -  ~~`user_id`: id of the commenting user as foreign key.~~
+  - ~~`post_id`: related post for this comment, as foreign key.~~
 
 - ~~Association table `likes` added in the database with the following columns:~~
 ~~  -  `user_id`: id of the commenting user as foreign key.~~
