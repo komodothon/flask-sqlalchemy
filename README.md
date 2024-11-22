@@ -13,6 +13,10 @@ A multi-model, relational database with features to manage users and their posts
 
 JWT tokens used for user authorisation (Flask-JWT-Extended library). 
 
+Flask-WTForms implemented in html frontend to make requests.
+
+Separate files created for db models and forms and then imported onto app.py.
+
 ---
 
 ## Features and Components
@@ -54,7 +58,7 @@ JWT tokens used for user authorisation (Flask-JWT-Extended library).
   - A simple route that returns a plain text message for demonstration.
 
 #### - **Register (`/register`, POST)**
-  - Accepts JSON data to register a new user with `username`,  `email` and `password`.
+  - ~~Accepts JSON data to register a new user with `username`,  `email` and `password`.~~
   - Checks for duplicate usernames.
   - secures the password by hashing using bcrypt hash.
   - Inserts the new user into the database and commits the transaction.
@@ -63,19 +67,24 @@ JWT tokens used for user authorisation (Flask-JWT-Extended library).
   - Logs a user in.
   - initiates a session for that user.
 
+#### - **Dashboard (`/dashboard`, POST)**
+  - landing page after user logging in.
+  - `@jwt_required()` decorator ensures that a valid token is required to access
+
 #### - **Create Post (`/posts`, POST)**
   - `@jwt_required()` decorator ensures that a valid token is required to access post-related routes. `get_jwt_identity()` function retrieves current user's identity from the JWT token.
-  - Accepts JSON data to add a new post with `title`, `content` and utilises user detail from `session` to be author of the post.
+  - ~~Accepts JSON data to add a new post with `title`, `content` and utilises user detail from `session` to be author of the post.~~
   - Inserts the new post into the database and commits the transaction.
 
 #### - **Get All Posts (`/posts`, GET)**
   - `@jwt_required()` decorator ensures that a valid token is required to access post-related routes. `get_jwt_identity()` function retrieves current user's dentity from the JWT token.
   - Retrieves all posts from the database by current user.
-  - Returns a JSON response containing a list of all posts.
+  - ~~Returns a JSON response containing a list of all posts.~~
 
 ---
 ### Learnings
-  - `access_token = create_access_token(identity=(user.id))`. Integer object was introduced as 'sub' or subject in jwt token which was not accepted and resulted in response below. Hence, string conversion was effected as `access_token = create_access_token(identity=str(user.id))`
+
+1.  `access_token = create_access_token(identity=(user.id))`. Integer object was introduced as 'sub' or subject in jwt token which was not accepted and resulted in response below. Hence, string conversion was effected as `access_token = create_access_token(identity=str(user.id))`
   
   ```json 
     {"msg": "Subject must be a string"}
@@ -83,6 +92,11 @@ JWT tokens used for user authorisation (Flask-JWT-Extended library).
 
   - Expected that when assigning `current_user_id = get_jwt_identity()`, may need to convert back to Integer. But not needed to. 
   - Reason: assuming that SQLAlchemy does the data type coercion of the String object into Integer automatically. To be reviewed.
+
+  2. POST request in /create_post results in a CSRF token error as below. To be resolved.
+  ```json
+  {"msg": "Missing CSRF token"}
+  ```
 
 ---
 ## Example Usage
