@@ -1,7 +1,11 @@
-from flask import Flask, request, render_template, jsonify, redirect, url_for
+from flask import Flask, request, render_template, jsonify, redirect, url_for, flash, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+
+from forms import RegisterForm, LoginForm, CreatePostForm
+from db_models import db, User, Post
+
 
 app = Flask(__name__)
 
@@ -9,44 +13,15 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'app_secret_key'
-app.config['JWT_SECRET_KEY'] = 'jwt_secret_key'
+
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = 3600
 
 
 # Extensions
-db = SQLAlchemy(app)
+db.init_app(app) # initialising the db object
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 
-
-# define models
-class User(db.Model):
-    __tablename__ = 'users'
-
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(128), nullable=False)
-
-    posts = db.relationship('Post', back_populates='author', cascade='all, delete-orphan')
-
-    def __repr__(self):
-        return f"<User (id:{self.id}, username:{self.username}, email:{self.email})>"
-    
-
-class Post(db.Model):
-    __tablename__ = 'posts'
-
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(120), nullable=False)
-    content = db.Column(db.Text, nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-
-    author = db.relationship('User', back_populates='posts')
-
-    def __repr__(self):
-        return f"<Post(id={self.id}, title={self.title}, author={self.user_id})>"
-    
 
 # create database tables
 with app.app_context():
@@ -56,67 +31,100 @@ with app.app_context():
 # routes 
 @app.route("/")
 def home():
-    return "Flask-SQLAlchemy demo with JWT authentication."
+    return render_template("home.html")
 
 
 ### User routes
-@app.route("/register", methods=["POST"])
+@app.route("/register", methods=["GET","POST"])
 def register():
     """Register a new user"""
-    data = request.get_json()
-    username = data.get('username')
-    email = data.get('email')
-    password = data.get('password')
-    password_hashed = bcrypt.generate_password_hash(password).decode('utf-8')
 
-    if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
-        return jsonify({'message': 'User already exists!'}), 400
-    
-    new_user = User(username=username, email=email, password=password_hashed)
-    db.session.add(new_user)
-    db.session.commit()
+    registerform = RegisterForm()
 
-    return jsonify({'message': 'User registered successfully'}), 201
+    if registerform.validate_on_submit():
+        username = registerform.username.data
+        email = registerform.email.data
+        password = registerform.password.data
+        password_hashed = bcrypt.generate_password_hash(password).decode('utf-8')
+
+        if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
+            flash("User already exists!", "danger")
+            return render_template("register.html", form=registerform)
+        
+        new_user = User(username=username, email=email, password=password_hashed)
+        db.session.add(new_user)
+        db.session.commit()
+        flash("User added successfully!", "success")
+        return redirect(url_for('login'))
 
 
-@app.route("/login", methods=["POST"])
+    return render_template("register.html", form=registerform)
+
+
+@app.route("/login", methods=["GET", "POST"])
 def login():
     """Authenticate an user"""
-
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-
-    if username and password:
-        user = User.query.filter_by(username=username).first()
     
-    if user and bcrypt.check_password_hash(user.password, password):
-        access_token = create_access_token(identity=str(user.id)) # passing 'int' type in jwt results in a 'sub must be string' message. 
-        return jsonify({'message': 'Login successful', 'access_token': access_token}), 200
+    loginform = LoginForm()
 
-    return jsonify({'message': 'Invalid credentials'}), 401
+    if loginform.validate_on_submit():
+        username = loginform.username.data
+        password = loginform.password.data
+
+        user = User.query.filter_by(username=username).first()
+
+        if user and bcrypt.check_password_hash(user.password, password):
+            # generate access token
+            access_token = create_access_token(identity=str(user.id))
+
+            # make response
+            response = make_response(redirect(url_for('dashboard')))
+            response.set_cookie('access_token_cookie', 
+                                access_token, 
+                                httponly=True, 
+                                secure=False)
+
+            return response
+
+    return render_template("login.html", form=loginform)
+
+@app.route("/dashboard")
+@jwt_required(locations=["cookies"])
+def dashboard():
+    current_user_id = get_jwt_identity()
+    return render_template("dashboard.html", user_id=current_user_id)
 
 
 ### Post routes
-@app.route("/create_post", methods=["POST"])
-@jwt_required()
+@app.route("/create_post", methods=["GET","POST"])
+@jwt_required(locations=["cookies"])
 def create_post():
     """Create a new post."""
+    create_post_form = CreatePostForm()
 
-    current_user_id = get_jwt_identity() # SQLA performing data type coercion when checking against the database.
+    if create_post_form.validate_on_submit():
+        title = create_post_form.title.data
+        content = create_post_form.content.data
+        
+        current_user_id = get_jwt_identity()
 
-    data = request.get_json()
-    title = data.get('title')
-    content = data.get('content')
+        print(f"Title: {title}")
+        print(f"Content: {content}")
+        print(f"Current user id: {current_user_id}")
 
-    new_post = Post(title=title, content=content, user_id=current_user_id)
-    db.session.add(new_post)
-    db.session.commit()
 
-    return jsonify({'message': 'Post created successfully', 'post': {'title': title, 'content': content}}), 201
+        new_post = Post(title=title, content=content, user_id=current_user_id)
+        db.session.add(new_post)
+        db.session.commit()
+
+        flash("Post created successfully!", "success")
+        return redirect(url_for('dashboard'))
+
+    return render_template("create_post.html", form=create_post_form)
+
 
 @app.route("/my_posts", methods=["GET"])
-@jwt_required()
+@jwt_required(locations=["cookies"])
 def get_my_posts():
     """List all posts by the current user"""
     current_user_id = get_jwt_identity() # SQLA performing data type coercion when checking against the database.
@@ -124,7 +132,7 @@ def get_my_posts():
     posts = Post.query.filter_by(user_id=current_user_id).all()
     post_list = [{'id': post.id, 'title': post.title, 'content': post.content}for post in posts]
 
-    return jsonify({'posts': post_list}), 200
+    return render_template("my_posts.html", posts=post_list)
 
 if __name__ == "__main__":
     app.run(debug=True)

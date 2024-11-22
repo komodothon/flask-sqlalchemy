@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Create post
+{% endblock %}
+
+{% block content %}
+    <div class="mb-3">
+        <form method="POST" action="{{ url_for('create_post') }}">
+             <!-- CSRF Token -->
+             {{ form.csrf_token }}
+             
+            <div class="mb-3">
+                {{ form.title.label(class="form-label") }}
+                {{ form.title(class="form-control") }}
+
+                {% if form.title.errors %}
+                    {% for error in form.title.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                {{ form.content.label(class="form-label") }}
+                {{ form.content(class="form-control") }}
+
+                {% if form.content.errors %}
+                {% for error in form.content.errors %}
+                    <span class="text-danger">{{ error }}</span>
+                {% endfor %}
+            {% endif %}
+            </div>
+
+            <div class="mb-3">
+                {{ form.submit(class="btn btn-primary mb-3") }}
+            </div>
+        </form>
+
+    </div>
+
+{% endblock %}

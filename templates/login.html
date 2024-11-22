@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Login
+{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <form method="POST" action="{{ url_for('login') }}">
+        <div class="mb-3">
+                {{ form.hidden_tag() }}
+                <div>
+                    {{ form.username.label(class="form-label") }}
+                    {{ form.username(class="form-control")}}
+                </div>
+
+                <div>
+                {{ form.password.label(class="form-label") }}
+                {{ form.password(class="form-control") }}
+                </div>
+
+                <div class="mb-3">
+                {{ form.submit(class="btn btn-primary mb-3") }}
+                </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

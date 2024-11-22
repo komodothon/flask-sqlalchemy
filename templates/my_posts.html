@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    My posts
+{% endblock %}
+
+{% block content %}
+    {% if posts %}
+        {% for post in posts %}
+            <div>
+                <h2>{{ post.title }}</h2>
+                <p>{{ post.content }}</p>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endblock %}

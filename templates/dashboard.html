@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Dashboard
+{% endblock %}
+
+{% block content %}
+    <h2>Welcome to your dashboard</h2>
+    <a href="{{ url_for('create_post') }}">Create a new post</a>
+    <a href="{{ url_for('get_my_posts') }}">View my posts</a>
+{% endblock %}
